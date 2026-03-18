@@ -110,7 +110,40 @@ export default function PlayerStatsPage() {
     </main>
   );
 }
+const rows = players
+  .filter((player) => getTeam(player.team_id)?.division_id === selectedDivision)
+  .map((player) => {
+    const playerRows = stats.filter((s) => s.player_id === player.id);
 
+    const totals = playerRows.reduce(
+      (acc, row) => {
+        acc.legsPlayed += row.legs_played || 0;
+        acc.legsWon += row.legs_won || 0;
+        acc.oneEighties += row.one_eighties || 0;
+        acc.tonPlusFinishes += row.ton_plus_finishes || 0;
+        return acc;
+      },
+      { legsPlayed: 0, legsWon: 0, oneEighties: 0, tonPlusFinishes: 0 }
+    );
+
+    const winPercent =
+      totals.legsPlayed > 0
+        ? Math.round((totals.legsWon / totals.legsPlayed) * 1000) / 10
+        : 0;
+
+    return {
+      name: player.name,
+      team: getTeam(player.team_id)?.name || "",
+      ...totals,
+      winPercent,
+    };
+  })
+  .sort((a, b) => {
+    if (b.winPercent !== a.winPercent) return b.winPercent - a.winPercent;
+    if (b.legsWon !== a.legsWon) return b.legsWon - a.legsWon;
+    if (b.oneEighties !== a.oneEighties) return b.oneEighties - a.oneEighties;
+    return b.tonPlusFinishes - a.tonPlusFinishes;
+  });
 const cardStyle = {
   background: "#fff",
   padding: "24px",
