@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 export default function AdminPage() {
   const [divisions, setDivisions] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [fixtures, setFixtures] = useState([]);
   const [message, setMessage] = useState("");
 
   const [form, setForm] = useState({
@@ -18,39 +19,22 @@ export default function AdminPage() {
   }, []);
 
   async function loadData() {
-    const { data: divisionData } = await supabase
-      .from("divisions")
-      .select("*");
-
-    const { data: teamData } = await supabase
-      .from("teams")
-      .select("*");
+    const { data: divisionData } = await supabase.from("divisions").select("*");
+    const { data: teamData } = await supabase.from("teams").select("*");
+    const { data: fixtureData } = await supabase
+      .from("fixtures")
+      .select("*")
+      .order("date", { ascending: true });
 
     setDivisions(divisionData || []);
     setTeams(teamData || []);
+    setFixtures(fixtureData || []);
   }
 
   async function addFixture(e) {
     e.preventDefault();
 
-    if (
-      !form.division_id ||
-      !form.date ||
-      !form.home_team_id ||
-      !form.away_team_id
-    ) {
-      setMessage("Please complete all fields");
-      return;
-    }
-
-    const { error } = await supabase.from("fixtures").insert([
-      {
-        division_id: form.division_id,
-        date: form.date,
-        home_team_id: form.home_team_id,
-        away_team_id: form.away_team_id,
-      },
-    ]);
+    const { error } = await supabase.from("fixtures").insert([form]);
 
     if (error) {
       setMessage(error.message);
@@ -62,18 +46,19 @@ export default function AdminPage() {
         home_team_id: "",
         away_team_id: "",
       });
+      loadData();
     }
   }
 
-  const filteredTeams = teams.filter(
-    (t) => t.division_id === form.division_id
-  );
+  function getTeamName(id) {
+    return teams.find((t) => t.id === id)?.name || id;
+  }
 
   return (
     <main style={{ padding: "32px", fontFamily: "Arial" }}>
       <h1>Admin</h1>
 
-      <form onSubmit={addFixture} style={{ marginTop: "20px" }}>
+      <form onSubmit={addFixture}>
         <select
           value={form.division_id}
           onChange={(e) =>
@@ -107,11 +92,13 @@ export default function AdminPage() {
           }
         >
           <option value="">Home Team</option>
-          {filteredTeams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
+          {teams
+            .filter((t) => t.division_id === form.division_id)
+            .map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
         </select>
 
         <br /><br />
@@ -123,11 +110,13 @@ export default function AdminPage() {
           }
         >
           <option value="">Away Team</option>
-          {filteredTeams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
+          {teams
+            .filter((t) => t.division_id === form.division_id)
+            .map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
         </select>
 
         <br /><br />
@@ -136,6 +125,14 @@ export default function AdminPage() {
       </form>
 
       {message && <p>{message}</p>}
+
+      <h2 style={{ marginTop: "40px" }}>All Fixtures</h2>
+
+      {fixtures.map((f) => (
+        <div key={f.id} style={{ marginBottom: "10px" }}>
+          {f.date} — {getTeamName(f.home_team_id)} vs {getTeamName(f.away_team_id)}
+        </div>
+      ))}
     </main>
   );
 }
