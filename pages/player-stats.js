@@ -48,10 +48,6 @@ export default function PlayerStatsPage() {
     return fixtures.find((f) => f.id === fixtureId);
   }
 
-  function getTeamName(teamId) {
-    return teams.find((t) => t.id === teamId)?.name || "";
-  }
-
   function handleSort(field) {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -90,9 +86,11 @@ export default function PlayerStatsPage() {
       return {
         name: player.name,
         team: getTeam(player.team_id)?.name || "",
-        ...totals,
-        winPercent,
+        legsPlayed: totals.legsPlayed,
+        legsWon: totals.legsWon,
+        oneEighties: totals.oneEighties,
         tonPlusFinishes: playerCheckouts.length,
+        winPercent,
       };
     })
     .sort((a, b) => {
@@ -111,12 +109,13 @@ export default function PlayerStatsPage() {
     })
     .map((checkout) => {
       const player = getPlayer(checkout.player_id);
+      const team = player ? getTeam(player.team_id) : null;
       const fixture = getFixture(checkout.fixture_id);
 
       return {
         id: checkout.id,
         playerName: player?.name || "",
-        teamName: getTeam(player?.team_id)?.name || "",
+        teamName: team?.name || "",
         value: checkout.checkout_value,
         date: fixture?.date || "",
       };
