@@ -1,6 +1,48 @@
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "../lib/supabase";
 
-export default function HomePage() {
+export default function SquadsPage() {
+  const [divisions, setDivisions] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [selectedDivision, setSelectedDivision] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState("");
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    const { data: divisionData } = await supabase.from("divisions").select("*");
+    const { data: teamData } = await supabase.from("teams").select("*");
+    const { data: playerData } = await supabase
+      .from("players")
+      .select("*")
+      .order("name", { ascending: true });
+
+    setDivisions(divisionData || []);
+    setTeams(teamData || []);
+    setPlayers(playerData || []);
+
+    if (divisionData?.length) {
+      const firstDivision = divisionData[0].id;
+      setSelectedDivision(firstDivision);
+
+      const firstTeam = (teamData || []).find((t) => t.division_id === firstDivision);
+      if (firstTeam) setSelectedTeam(firstTeam.id);
+    }
+  }
+
+  const filteredTeams = teams.filter((t) => t.division_id === selectedDivision);
+  const filteredPlayers = players.filter((p) => p.team_id === selectedTeam);
+
+  function handleDivisionChange(value) {
+    setSelectedDivision(value);
+    const firstTeam = teams.find((t) => t.division_id === value);
+    setSelectedTeam(firstTeam ? firstTeam.id : "");
+  }
+
   return (
     <main
       style={{
@@ -10,60 +52,54 @@ export default function HomePage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1 style={{ fontSize: "40px", marginBottom: "12px" }}>
-        Wednesday 5 a Side Darts League
-      </h1>
+      <div style={{ marginBottom: "20px" }}>
+        <Link href="/" style={linkStyle}>← Back to Home</Link>
+      </div>
 
-      <p style={{ fontSize: "18px", marginBottom: "24px" }}>
-        Official league website for fixtures, results, tables and player statistics.
-      </p>
+      <h1>Squad Lists</h1>
 
-     <div
-  style={{
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap",
-    marginBottom: "32px",
-  }}
->
-  <Link href="/table" style={buttonStyle}>
-    League Tables
-  </Link>
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", margin: "20px 0" }}>
+        <select
+          value={selectedDivision}
+          onChange={(e) => handleDivisionChange(e.target.value)}
+          style={inputStyle}
+        >
+          {divisions.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
 
-  <Link href="/fixtures" style={buttonStyle}>
-    Fixtures & Results
-  </Link>
+        <select
+          value={selectedTeam}
+          onChange={(e) => setSelectedTeam(e.target.value)}
+          style={inputStyle}
+        >
+          {filteredTeams.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-  <Link href="/player-stats" style={buttonStyle}>
-    Player Stats
-  </Link>
+      <div style={cardStyle}>
+        <h2 style={{ marginTop: 0 }}>
+          {filteredTeams.find((t) => t.id === selectedTeam)?.name || "Select a team"}
+        </h2>
 
-  <Link href="/admin" style={buttonStyleDark}>
-    Admin
-  </Link>
-</div>
-
-      <div
-        style={{
-          display: "grid",
-          gap: "16px",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        }}
-      >
-        <div style={cardStyle}>
-          <h2>Division 1</h2>
-          <p>Tables and results</p>
-        </div>
-
-        <div style={cardStyle}>
-          <h2>Division 2</h2>
-          <p>Fixtures and standings</p>
-        </div>
-
-        <div style={cardStyle}>
-          <h2>Division 3</h2>
-          <p>Player stats and squads</p>
-        </div>
+        {filteredPlayers.length === 0 ? (
+          <p style={{ color: "#64748b" }}>No players added for this team yet.</p>
+        ) : (
+          <div style={gridStyle}>
+            {filteredPlayers.map((player) => (
+              <div key={player.id} style={playerCardStyle}>
+                {player.name}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
@@ -76,22 +112,28 @@ const cardStyle = {
   boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
 };
 
-const buttonStyle = {
-  display: "inline-block",
-  padding: "12px 18px",
-  background: "#2563eb",
-  color: "#fff",
-  textDecoration: "none",
-  borderRadius: "10px",
+const gridStyle = {
+  display: "grid",
+  gap: "12px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const playerCardStyle = {
+  padding: "14px 16px",
+  border: "1px solid #e2e8f0",
+  borderRadius: "12px",
+  background: "#f8fafc",
   fontWeight: "bold",
 };
 
-const buttonStyleDark = {
-  display: "inline-block",
-  padding: "12px 18px",
-  background: "#111827",
-  color: "#fff",
-  textDecoration: "none",
+const inputStyle = {
+  padding: "10px 12px",
   borderRadius: "10px",
+  border: "1px solid #cbd5e1",
+};
+
+const linkStyle = {
+  textDecoration: "none",
+  color: "#2563eb",
   fontWeight: "bold",
 };
