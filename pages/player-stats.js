@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
-export default function FixturesPage() {
+export default function PlayerStatsPage() {
   const [divisions, setDivisions] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [fixtures, setFixtures] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [stats, setStats] = useState([]);
   const [selectedDivision, setSelectedDivision] = useState("");
+  const [sortField, setSortField] = useState("winPercent");
+  const [sortDirection, setSortDirection] = useState("desc");
 
   useEffect(() => {
     loadData();
@@ -15,58 +18,72 @@ export default function FixturesPage() {
   async function loadData() {
     const { data: divisionData } = await supabase.from("divisions").select("*");
     const { data: teamData } = await supabase.from("teams").select("*");
-    const { data: fixtureData } = await supabase
-      .from("fixtures")
-      .select("*")
-      .order("date", { ascending: true });
+    const { data: playerData } = await supabase.from("players").select("*");
+    const { data: statData } = await supabase.from("player_stats").select("*");
 
     setDivisions(divisionData || []);
     setTeams(teamData || []);
-    setFixtures(fixtureData || []);
+    setPlayers(playerData || []);
+    setStats(statData || []);
 
-    if (divisionData?.length) {
-      setSelectedDivision(divisionData[0].id);
+    if (divisionData?.length) setSelectedDivision(divisionData[0].id);
+  }
+
+  function getTeam(teamId) {
+    return teams.find((t) => t.id === teamId);
+  }
+
+  function handleSort(field) {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
     }
   }
 
-  function getTeamName(id) {
-    return teams.find((t) => t.id === id)?.name || "";
-  }
+  const rows = players
+    .filter((player) => getTeam(player.team_id)?.division_id === selectedDivision)
+    .map((player) => {
+      const playerRows = stats.filter((s) => s.player_id === player.id);
 
-  function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+      const totals = playerRows.reduce(
+        (acc, row) => {
+          acc.legsPlayed += row.legs_played || 0;
+          acc.legsWon += row.legs_won || 0;
+          acc.oneEighties += row.one_eighties || 0;
+          acc.tonPlusFinishes += row.ton_plus_finishes || 0;
+          return acc;
+        },
+        { legsPlayed: 0, legsWon: 0, oneEighties: 0, tonPlusFinishes: 0 }
+      );
+
+      const winPercent =
+        totals.legsPlayed > 0
+          ? Math.round((totals.legsWon / totals.legsPlayed) * 1000) / 10
+          : 0;
+
+      return {
+        name: player.name,
+        team: getTeam(player.team_id)?.name || "",
+        ...totals,
+        winPercent,
+      };
+    })
+    .sort((a, b) => {
+      const direction = sortDirection === "asc" ? 1 : -1;
+      if (a[sortField] < b[sortField]) return -1 * direction;
+      if (a[sortField] > b[sortField]) return 1 * direction;
+      return 0;
     });
-  }
-
-  const groupedFixtures = useMemo(() => {
-    const filtered = fixtures.filter((f) => f.division_id === selectedDivision);
-    const groups = {};
-
-    filtered.forEach((fixture) => {
-      if (!groups[fixture.date]) groups[fixture.date] = [];
-      groups[fixture.date].push(fixture);
-    });
-
-    return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [fixtures, selectedDivision]);
 
   return (
-    <main style={pageStyle}>
+    <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px", fontFamily: "Arial, sans-serif" }}>
       <div style={{ marginBottom: "20px" }}>
         <Link href="/" style={linkStyle}>← Back to Home</Link>
       </div>
 
-      <div style={headerCard}>
-        <h1 style={{ margin: 0 }}>Fixtures & Results</h1>
-        <p style={{ color: "#64748b", marginBottom: 0 }}>
-          Upcoming matches and completed results by division.
-        </p>
-      </div>
+      <h1>Player Stats</h1>
 
       <div style={{ margin: "20px 0" }}>
         <select
@@ -82,80 +99,62 @@ export default function FixturesPage() {
         </select>
       </div>
 
-      <div style={{ display: "grid", gap: "18px" }}>
-        {groupedFixtures.map(([date, dateFixtures]) => (
-          <div key={date} style={dateGroupStyle}>
-            <div style={dateHeaderStyle}>{formatDate(date)}</div>
-
-            <div style={{ display: "grid", gap: "12px" }}>
-              {dateFixtures.map((f) => (
-                <div key={f.id} style={cardStyle}>
-                  <div style={{ fontSize: "19px", fontWeight: "bold" }}>
-                    {getTeamName(f.home_team_id)}{" "}
-                    {f.played ? f.home_score : ""}
-                    {" "}
-                    {f.played ? "-" : "vs"}
-                    {" "}
-                    {f.played ? f.away_score : ""}
-                    {" "}
-                    {getTeamName(f.away_team_id)}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: "8px",
-                      fontSize: "14px",
-                      color: f.played ? "#0f766e" : "#92400e",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {f.played ? "Result entered" : "Fixture to play"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div style={cardStyle}>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Player</th>
+              <th style={thStyle}>Team</th>
+              <th style={thStyle} onClick={() => handleSort("legsPlayed")}>Legs Played</th>
+              <th style={thStyle} onClick={() => handleSort("legsWon")}>Legs Won</th>
+              <th style={thStyle} onClick={() => handleSort("winPercent")}>Win %</th>
+              <th style={thStyle} onClick={() => handleSort("oneEighties")}>180s</th>
+              <th style={thStyle} onClick={() => handleSort("tonPlusFinishes")}>100+ Finishes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={`${row.name}-${row.team}`}>
+                <td style={tdStyle}>{row.name}</td>
+                <td style={tdStyle}>{row.team}</td>
+                <td style={tdStyle}>{row.legsPlayed}</td>
+                <td style={tdStyle}>{row.legsWon}</td>
+                <td style={tdStyle}>{row.winPercent}%</td>
+                <td style={tdStyle}>{row.oneEighties}</td>
+                <td style={tdStyle}>{row.tonPlusFinishes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </main>
   );
 }
 
-const pageStyle = {
-  maxWidth: "1100px",
-  margin: "0 auto",
-  padding: "32px",
-  fontFamily: "Arial, sans-serif",
-};
-
-const headerCard = {
+const cardStyle = {
   background: "#fff",
   padding: "24px",
   borderRadius: "16px",
   boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+  overflowX: "auto",
 };
 
-const dateGroupStyle = {
-  background: "#fff",
-  padding: "20px",
-  borderRadius: "16px",
-  boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
 };
 
-const dateHeaderStyle = {
-  fontSize: "18px",
-  fontWeight: "bold",
-  marginBottom: "14px",
-  color: "#0f172a",
+const thStyle = {
+  textAlign: "left",
+  padding: "12px",
   borderBottom: "1px solid #e2e8f0",
-  paddingBottom: "10px",
+  background: "#f8fafc",
+  cursor: "pointer",
 };
 
-const cardStyle = {
-  background: "#f8fafc",
-  padding: "16px",
-  borderRadius: "12px",
-  border: "1px solid #e2e8f0",
+const tdStyle = {
+  padding: "12px",
+  borderBottom: "1px solid #e2e8f0",
 };
 
 const inputStyle = {
