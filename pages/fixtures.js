@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
@@ -33,9 +33,27 @@ export default function FixturesPage() {
     return teams.find((t) => t.id === id)?.name || "";
   }
 
-  const filteredFixtures = fixtures.filter(
-    (f) => f.division_id === selectedDivision
-  );
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  const groupedFixtures = useMemo(() => {
+    const filtered = fixtures.filter((f) => f.division_id === selectedDivision);
+    const groups = {};
+
+    filtered.forEach((fixture) => {
+      if (!groups[fixture.date]) groups[fixture.date] = [];
+      groups[fixture.date].push(fixture);
+    });
+
+    return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [fixtures, selectedDivision]);
 
   return (
     <main style={pageStyle}>
@@ -64,33 +82,37 @@ export default function FixturesPage() {
         </select>
       </div>
 
-      <div style={{ display: "grid", gap: "14px" }}>
-        {filteredFixtures.map((f) => (
-          <div key={f.id} style={cardStyle}>
-            <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px" }}>
-              {f.date}
-            </div>
+      <div style={{ display: "grid", gap: "18px" }}>
+        {groupedFixtures.map(([date, dateFixtures]) => (
+          <div key={date} style={dateGroupStyle}>
+            <div style={dateHeaderStyle}>{formatDate(date)}</div>
 
-            <div style={{ fontSize: "19px", fontWeight: "bold" }}>
-              {getTeamName(f.home_team_id)}{" "}
-              {f.played ? f.home_score : ""}
-              {" "}
-              {f.played ? "-" : "vs"}
-              {" "}
-              {f.played ? f.away_score : ""}
-              {" "}
-              {getTeamName(f.away_team_id)}
-            </div>
+            <div style={{ display: "grid", gap: "12px" }}>
+              {dateFixtures.map((f) => (
+                <div key={f.id} style={cardStyle}>
+                  <div style={{ fontSize: "19px", fontWeight: "bold" }}>
+                    {getTeamName(f.home_team_id)}{" "}
+                    {f.played ? f.home_score : ""}
+                    {" "}
+                    {f.played ? "-" : "vs"}
+                    {" "}
+                    {f.played ? f.away_score : ""}
+                    {" "}
+                    {getTeamName(f.away_team_id)}
+                  </div>
 
-            <div
-              style={{
-                marginTop: "8px",
-                fontSize: "14px",
-                color: f.played ? "#0f766e" : "#92400e",
-                fontWeight: "bold",
-              }}
-            >
-              {f.played ? "Result entered" : "Fixture to play"}
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      fontSize: "14px",
+                      color: f.played ? "#0f766e" : "#92400e",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {f.played ? "Result entered" : "Fixture to play"}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
@@ -113,11 +135,27 @@ const headerCard = {
   boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
 };
 
-const cardStyle = {
+const dateGroupStyle = {
   background: "#fff",
   padding: "20px",
   borderRadius: "16px",
   boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+};
+
+const dateHeaderStyle = {
+  fontSize: "18px",
+  fontWeight: "bold",
+  marginBottom: "14px",
+  color: "#0f172a",
+  borderBottom: "1px solid #e2e8f0",
+  paddingBottom: "10px",
+};
+
+const cardStyle = {
+  background: "#f8fafc",
+  padding: "16px",
+  borderRadius: "12px",
+  border: "1px solid #e2e8f0",
 };
 
 const inputStyle = {
