@@ -38,12 +38,17 @@ export default function FixturesPage() {
   );
 
   return (
-    <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px", fontFamily: "Arial, sans-serif" }}>
+    <main style={pageStyle}>
       <div style={{ marginBottom: "20px" }}>
         <Link href="/" style={linkStyle}>← Back to Home</Link>
       </div>
 
-      <h1>Fixtures & Results</h1>
+      <div style={headerCard}>
+        <h1 style={{ margin: 0 }}>Fixtures & Results</h1>
+        <p style={{ color: "#64748b", marginBottom: 0 }}>
+          Upcoming matches and completed results by division.
+        </p>
+      </div>
 
       <div style={{ margin: "20px 0" }}>
         <select
@@ -59,16 +64,15 @@ export default function FixturesPage() {
         </select>
       </div>
 
-      <div style={{ display: "grid", gap: "12px" }}>
+      <div style={{ display: "grid", gap: "14px" }}>
         {filteredFixtures.map((f) => (
           <div key={f.id} style={cardStyle}>
-            <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px" }}>
+            <div style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px" }}>
               {f.date}
             </div>
 
-            <div style={{ fontWeight: "bold", fontSize: "18px" }}>
-              {getTeamName(f.home_team_id)}
-              {" "}
+            <div style={{ fontSize: "19px", fontWeight: "bold" }}>
+              {getTeamName(f.home_team_id)}{" "}
               {f.played ? f.home_score : ""}
               {" "}
               {f.played ? "-" : "vs"}
@@ -78,7 +82,14 @@ export default function FixturesPage() {
               {getTeamName(f.away_team_id)}
             </div>
 
-            <div style={{ marginTop: "6px", fontSize: "14px", color: f.played ? "#0f766e" : "#92400e" }}>
+            <div
+              style={{
+                marginTop: "8px",
+                fontSize: "14px",
+                color: f.played ? "#0f766e" : "#92400e",
+                fontWeight: "bold",
+              }}
+            >
               {f.played ? "Result entered" : "Fixture to play"}
             </div>
           </div>
@@ -87,6 +98,20 @@ export default function FixturesPage() {
     </main>
   );
 }
+
+const pageStyle = {
+  maxWidth: "1100px",
+  margin: "0 auto",
+  padding: "32px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const headerCard = {
+  background: "#fff",
+  padding: "24px",
+  borderRadius: "16px",
+  boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+};
 
 const cardStyle = {
   background: "#fff",
