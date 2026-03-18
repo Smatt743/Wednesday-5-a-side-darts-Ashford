@@ -18,26 +18,30 @@ export default function HomePage() {
         Official league website for fixtures, results, tables and player statistics.
       </p>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          flexWrap: "wrap",
-          marginBottom: "32px",
-        }}
-      >
-        <Link href="/table" style={buttonStyle}>
-          League Tables
-        </Link>
+     <div
+  style={{
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginBottom: "32px",
+  }}
+>
+  <Link href="/table" style={buttonStyle}>
+    League Tables
+  </Link>
 
-        <Link href="/fixtures" style={buttonStyle}>
-          Fixtures & Results
-        </Link>
+  <Link href="/fixtures" style={buttonStyle}>
+    Fixtures & Results
+  </Link>
 
-        <Link href="/admin" style={buttonStyleDark}>
-          Admin
-        </Link>
-      </div>
+  <Link href="/player-stats" style={buttonStyle}>
+    Player Stats
+  </Link>
+
+  <Link href="/admin" style={buttonStyleDark}>
+    Admin
+  </Link>
+</div>
 
       <div
         style={{
