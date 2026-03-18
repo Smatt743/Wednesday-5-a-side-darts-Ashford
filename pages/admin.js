@@ -5,14 +5,8 @@ export default function AdminPage() {
   const [divisions, setDivisions] = useState([]);
   const [teams, setTeams] = useState([]);
   const [fixtures, setFixtures] = useState([]);
-  const [message, setMessage] = useState("");
-
-  const [form, setForm] = useState({
-    division_id: "",
-    date: "",
-    home_team_id: "",
-    away_team_id: "",
-  });
+  const [selectedDivision, setSelectedDivision] = useState("");
+  const [table, setTable] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -31,106 +25,123 @@ export default function AdminPage() {
     setFixtures(fixtureData || []);
   }
 
-  async function addFixture(e) {
-    e.preventDefault();
-
-    const { error } = await supabase.from("fixtures").insert([form]);
-
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage("Fixture added ✅");
-      setForm({
-        division_id: "",
-        date: "",
-        home_team_id: "",
-        away_team_id: "",
-      });
-      loadData();
-    }
+  function getTeamName(id) {
+    return teams.find((t) => t.id === id)?.name || "";
   }
 
-  function getTeamName(id) {
-    return teams.find((t) => t.id === id)?.name || id;
+  async function updateScore(id, field, value) {
+    await supabase
+      .from("fixtures")
+      .update({ [field]: parseInt(value) })
+      .eq("id", id);
+
+    loadData();
+  }
+
+  async function markPlayed(id) {
+    await supabase
+      .from("fixtures")
+      .update({ played: true })
+      .eq("id", id);
+
+    loadData();
+  }
+
+  function calculateTable() {
+    const filtered = fixtures.filter(
+      (f) => f.division_id === selectedDivision && f.played
+    );
+
+    let standings = {};
+
+    filtered.forEach((f) => {
+      if (!standings[f.home_team_id]) {
+        standings[f.home_team_id] = { played: 0, won: 0, lost: 0, points: 0 };
+      }
+      if (!standings[f.away_team_id]) {
+        standings[f.away_team_id] = { played: 0, won: 0, lost: 0, points: 0 };
+      }
+
+      standings[f.home_team_id].played++;
+      standings[f.away_team_id].played++;
+
+      if (f.home_score > f.away_score) {
+        standings[f.home_team_id].won++;
+        standings[f.home_team_id].points += 1;
+        standings[f.away_team_id].lost++;
+      } else if (f.away_score > f.home_score) {
+        standings[f.away_team_id].won++;
+        standings[f.away_team_id].points += 1;
+        standings[f.home_team_id].lost++;
+      }
+    });
+
+    const tableArray = Object.entries(standings).map(([team_id, stats]) => ({
+      team: getTeamName(team_id),
+      ...stats,
+    }));
+
+    tableArray.sort((a, b) => b.points - a.points);
+
+    setTable(tableArray);
   }
 
   return (
     <main style={{ padding: "32px", fontFamily: "Arial" }}>
       <h1>Admin</h1>
 
-      <form onSubmit={addFixture}>
-        <select
-          value={form.division_id}
-          onChange={(e) =>
-            setForm({ ...form, division_id: e.target.value })
-          }
-        >
-          <option value="">Select Division</option>
-          {divisions.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
+      <select onChange={(e) => setSelectedDivision(e.target.value)}>
+        <option value="">Select Division</option>
+        {divisions.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.name}
+          </option>
+        ))}
+      </select>
 
-        <br /><br />
+      <button onClick={calculateTable} style={{ marginLeft: "10px" }}>
+        Generate Table
+      </button>
 
-        <input
-          type="date"
-          value={form.date}
-          onChange={(e) =>
-            setForm({ ...form, date: e.target.value })
-          }
-        />
+      <h2 style={{ marginTop: "30px" }}>Fixtures</h2>
 
-        <br /><br />
+      {fixtures
+        .filter((f) => f.division_id === selectedDivision)
+        .map((f) => (
+          <div key={f.id} style={{ marginBottom: "10px" }}>
+            {f.date} — {getTeamName(f.home_team_id)} vs {getTeamName(f.away_team_id)}
 
-        <select
-          value={form.home_team_id}
-          onChange={(e) =>
-            setForm({ ...form, home_team_id: e.target.value })
-          }
-        >
-          <option value="">Home Team</option>
-          {teams
-            .filter((t) => t.division_id === form.division_id)
-            .map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-        </select>
+            <br />
 
-        <br /><br />
+            <input
+              type="number"
+              placeholder="Home"
+              value={f.home_score}
+              onChange={(e) =>
+                updateScore(f.id, "home_score", e.target.value)
+              }
+            />
 
-        <select
-          value={form.away_team_id}
-          onChange={(e) =>
-            setForm({ ...form, away_team_id: e.target.value })
-          }
-        >
-          <option value="">Away Team</option>
-          {teams
-            .filter((t) => t.division_id === form.division_id)
-            .map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-        </select>
+            <input
+              type="number"
+              placeholder="Away"
+              value={f.away_score}
+              onChange={(e) =>
+                updateScore(f.id, "away_score", e.target.value)
+              }
+            />
 
-        <br /><br />
+            <button onClick={() => markPlayed(f.id)}>
+              Mark Played
+            </button>
+          </div>
+        ))}
 
-        <button type="submit">Add Fixture</button>
-      </form>
+      <h2 style={{ marginTop: "40px" }}>League Table</h2>
 
-      {message && <p>{message}</p>}
-
-      <h2 style={{ marginTop: "40px" }}>All Fixtures</h2>
-
-      {fixtures.map((f) => (
-        <div key={f.id} style={{ marginBottom: "10px" }}>
-          {f.date} — {getTeamName(f.home_team_id)} vs {getTeamName(f.away_team_id)}
+      {table.map((t, i) => (
+        <div key={i}>
+          {i + 1}. {t.team} — P: {t.played} W: {t.won} L: {t.lost} Pts: {t.points}
         </div>
       ))}
     </main>
