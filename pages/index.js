@@ -1,61 +1,114 @@
 import Link from "next/link";
 
 export default function Home() {
+  const cards = [
+    {
+      title: "League Tables",
+      text: "View the latest standings across all divisions.",
+      href: "/table",
+      color: "#2563eb",
+    },
+    {
+      title: "Fixtures & Results",
+      text: "See upcoming matches and completed results.",
+      href: "/fixtures",
+      color: "#0f766e",
+    },
+    {
+      title: "Player Stats",
+      text: "Check win %, 180s and 100+ finishes.",
+      href: "/player-stats",
+      color: "#7c3aed",
+    },
+    {
+      title: "Squad Lists",
+      text: "Browse players by division and team.",
+      href: "/squads",
+      color: "#ea580c",
+    },
+  ];
+
   return (
     <main
       style={{
-        maxWidth: "1100px",
+        maxWidth: "1150px",
         margin: "0 auto",
         padding: "32px",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1 style={{ marginBottom: "20px" }}>
-        Wednesday 5 A Side Darts League
-      </h1>
-
-      <div
+      <section
         style={{
-          display: "flex",
-          gap: "12px",
-          flexWrap: "wrap",
-          marginBottom: "32px",
+          background: "linear-gradient(135deg, #0f172a, #1e293b)",
+          color: "white",
+          borderRadius: "24px",
+          padding: "36px",
+          marginBottom: "28px",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
         }}
       >
-        <Link href="/table" style={buttonStyle}>
-          League Tables
-        </Link>
-
-        <Link href="/fixtures" style={buttonStyle}>
-          Fixtures & Results
-        </Link>
-
-        <Link href="/player-stats" style={buttonStyle}>
-          Player Stats
-        </Link>
-
-        <Link href="/squads" style={buttonStyle}>
-          Squad Lists
-        </Link>
-
-        <Link href="/admin" style={buttonStyleDark}>
-          Admin
-        </Link>
-      </div>
-
-      <div style={cardStyle}>
-        <h2>Welcome</h2>
-        <p>
-          Welcome to the Wednesday 5 a side darts league website.
-          Use the buttons above to view fixtures, tables, player stats and squad lists.
+        <p style={{ opacity: 0.85, marginTop: 0, marginBottom: "10px" }}>
+          Official Website
         </p>
-      </div>
+        <h1 style={{ margin: 0, fontSize: "48px", lineHeight: 1.1 }}>
+          Wednesday 5 A Side Darts League
+        </h1>
+        <p style={{ fontSize: "18px", maxWidth: "720px", color: "#cbd5e1", marginTop: "16px" }}>
+          Fixtures, results, tables, player stats and squad lists for all divisions in one place.
+        </p>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginTop: "22px",
+          }}
+        >
+          <Link href="/table" style={heroButton}>
+            View Tables
+          </Link>
+          <Link href="/fixtures" style={heroButtonAlt}>
+            View Fixtures
+          </Link>
+          <Link href="/admin" style={heroButtonDark}>
+            Admin
+          </Link>
+        </div>
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gap: "18px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        }}
+      >
+        {cards.map((card) => (
+          <Link
+            key={card.title}
+            href={card.href}
+            style={{
+              textDecoration: "none",
+              color: "#0f172a",
+              background: "#fff",
+              borderRadius: "18px",
+              padding: "22px",
+              boxShadow: "0 1px 8px rgba(0,0,0,0.08)",
+              borderTop: `6px solid ${card.color}`,
+            }}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: "10px" }}>{card.title}</h2>
+            <p style={{ margin: 0, color: "#475569", lineHeight: 1.5 }}>{card.text}</p>
+          </Link>
+        ))}
+      </section>
     </main>
   );
 }
 
-const buttonStyle = {
-  padding: "12px 16px",
+const heroButton = {
+  padding: "12px 18px",
   background: "#2563eb",
   color: "#fff",
   borderRadius: "10px",
@@ -63,18 +116,20 @@ const buttonStyle = {
   fontWeight: "bold",
 };
 
-const buttonStyleDark = {
-  padding: "12px 16px",
-  background: "#111827",
-  color: "#fff",
+const heroButtonAlt = {
+  padding: "12px 18px",
+  background: "#ffffff",
+  color: "#0f172a",
   borderRadius: "10px",
   textDecoration: "none",
   fontWeight: "bold",
 };
 
-const cardStyle = {
-  background: "#fff",
-  padding: "24px",
-  borderRadius: "16px",
-  boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+const heroButtonDark = {
+  padding: "12px 18px",
+  background: "#111827",
+  color: "#fff",
+  borderRadius: "10px",
+  textDecoration: "none",
+  fontWeight: "bold",
 };
