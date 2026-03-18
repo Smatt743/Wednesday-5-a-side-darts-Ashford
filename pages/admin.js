@@ -27,7 +27,7 @@ export default function AdminPage() {
     legs_played: "",
     legs_won: "",
     one_eighties: "",
-    ton_plus_finishes: "",
+    checkout_value: "",
   });
 
   useEffect(() => {
@@ -142,24 +142,42 @@ export default function AdminPage() {
       legs_played: parseInt(statsForm.legs_played || 0),
       legs_won: parseInt(statsForm.legs_won || 0),
       one_eighties: parseInt(statsForm.one_eighties || 0),
-      ton_plus_finishes: parseInt(statsForm.ton_plus_finishes || 0),
+      ton_plus_finishes: 0,
     };
 
     const { error } = await supabase.from("player_stats").insert([payload]);
 
     if (error) {
       setMessage(error.message);
-    } else {
-      setMessage("Player stats added ✅");
-      setStatsForm({
-        fixture_id: "",
-        player_id: "",
-        legs_played: "",
-        legs_won: "",
-        one_eighties: "",
-        ton_plus_finishes: "",
-      });
+      return;
     }
+
+    const checkoutValue = parseInt(statsForm.checkout_value || 0);
+
+    if (checkoutValue >= 100) {
+      const { error: checkoutError } = await supabase.from("high_checkouts").insert([
+        {
+          fixture_id: statsForm.fixture_id,
+          player_id: statsForm.player_id,
+          checkout_value: checkoutValue,
+        },
+      ]);
+
+      if (checkoutError) {
+        setMessage(checkoutError.message);
+        return;
+      }
+    }
+
+    setMessage("Player stats added ✅");
+    setStatsForm({
+      fixture_id: "",
+      player_id: "",
+      legs_played: "",
+      legs_won: "",
+      one_eighties: "",
+      checkout_value: "",
+    });
   }
 
   function calculateTable() {
@@ -431,9 +449,9 @@ export default function AdminPage() {
           />
           <input
             type="number"
-            placeholder="100+ finishes"
-            value={statsForm.ton_plus_finishes}
-            onChange={(e) => setStatsForm({ ...statsForm, ton_plus_finishes: e.target.value })}
+            placeholder="Exact 100+ checkout"
+            value={statsForm.checkout_value}
+            onChange={(e) => setStatsForm({ ...statsForm, checkout_value: e.target.value })}
             style={smallInputStyle}
           />
         </div>
@@ -463,7 +481,7 @@ const inputStyle = {
 };
 
 const smallInputStyle = {
-  width: "120px",
+  width: "140px",
   padding: "8px 10px",
   marginRight: "8px",
   borderRadius: "8px",
