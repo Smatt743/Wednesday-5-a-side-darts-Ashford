@@ -93,14 +93,21 @@ export default function TablePage() {
   }
 
   const table = calculateTable();
+  const selectedDivisionName =
+    divisions.find((d) => d.id === selectedDivision)?.name || "League Table";
 
   return (
-    <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "32px", fontFamily: "Arial, sans-serif" }}>
+    <main style={pageStyle}>
       <div style={{ marginBottom: "20px" }}>
         <Link href="/" style={linkStyle}>← Back to Home</Link>
       </div>
 
-      <h1>League Tables</h1>
+      <div style={headerCard}>
+        <h1 style={{ margin: 0 }}>League Tables</h1>
+        <p style={{ color: "#64748b", marginBottom: 0 }}>
+          Current standings for each division.
+        </p>
+      </div>
 
       <div style={{ margin: "20px 0" }}>
         <select
@@ -117,6 +124,7 @@ export default function TablePage() {
       </div>
 
       <div style={cardStyle}>
+        <h2 style={{ marginTop: 0 }}>{selectedDivisionName}</h2>
         <table style={tableStyle}>
           <thead>
             <tr>
@@ -133,16 +141,19 @@ export default function TablePage() {
           </thead>
           <tbody>
             {table.map((row, index) => (
-              <tr key={row.team}>
+              <tr
+                key={row.team}
+                style={index === 0 ? { background: "#eff6ff" } : undefined}
+              >
                 <td style={tdStyle}>{index + 1}</td>
-                <td style={tdStyle}>{row.team}</td>
+                <td style={{ ...tdStyle, fontWeight: "bold" }}>{row.team}</td>
                 <td style={tdStyle}>{row.played}</td>
                 <td style={tdStyle}>{row.won}</td>
                 <td style={tdStyle}>{row.lost}</td>
                 <td style={tdStyle}>{row.legsFor}</td>
                 <td style={tdStyle}>{row.legsAgainst}</td>
                 <td style={tdStyle}>{row.legDiff}</td>
-                <td style={tdStyle}>{row.points}</td>
+                <td style={{ ...tdStyle, fontWeight: "bold" }}>{row.points}</td>
               </tr>
             ))}
           </tbody>
@@ -151,6 +162,20 @@ export default function TablePage() {
     </main>
   );
 }
+
+const pageStyle = {
+  maxWidth: "1100px",
+  margin: "0 auto",
+  padding: "32px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const headerCard = {
+  background: "#fff",
+  padding: "24px",
+  borderRadius: "16px",
+  boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+};
 
 const cardStyle = {
   background: "#fff",
